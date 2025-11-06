@@ -5,9 +5,28 @@ const menuList = document.getElementById("menuList");
 const orderList = document.getElementById("orderList");
 const totalHarga = document.getElementById("totalHarga");
 
-let menuData = [];
-// Pesanan sekarang menyimpan objek { menu: {nama, harga, ...}, kuantitas: N }
-let pesanan = []; 
+// 🍔 Data menu awal (3 Menu Tetap)
+let menuData = [
+  {
+    nama: "Nasi Goreng Spesial",
+    harga: 25000,
+    deskripsi: "Nasi goreng dengan bumbu rempah khas, telur, dan irisan ayam.",
+    foto: "https://images.unsplash.com/photo-1572656631137-7935297cefa8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
+  },
+  {
+    nama: "Mie Ayam Bakso",
+    harga: 22000,
+    deskripsi: "Mie kenyal dengan topping ayam bumbu manis, sawi, dan bakso sapi.",
+    foto: "https://images.unsplash.com/photo-1594916894086-fe1e39a349b1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
+  },
+  {
+    nama: "Es Teh Manis Jumbo",
+    harga: 8000,
+    deskripsi: "Minuman segar pelepas dahaga, porsi besar.",
+    foto: "https://images.unsplash.com/photo-1616790901502-3c1a7d6e4092?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
+  },
+];
+let pesanan = [];
 
 // Fungsi format angka ke format Rupiah pakai titik ribuan (selalu 3 digit di belakang nol)
 function formatRupiah(angka) {
@@ -22,11 +41,10 @@ formMenu.addEventListener("submit", (e) => {
   const nama = document.getElementById("nama").value;
   const harga = parseInt(document.getElementById("harga").value);
   const deskripsi = document.getElementById("deskripsi").value;
-  const foto = document.getElementById("foto").value || "https://via.placeholder.com/150";
+  const foto =
+    document.getElementById("foto").value || "https://via.placeholder.com/150";
 
-  // Tambahkan ID unik untuk identifikasi
-  const id = Date.now(); 
-  menuData.push({ id, nama, harga, deskripsi, foto }); 
+  menuData.push({ nama, harga, deskripsi, foto });
   renderMenu();
 
   formMenu.reset();
@@ -34,130 +52,74 @@ formMenu.addEventListener("submit", (e) => {
 
 function renderMenu() {
   menuList.innerHTML = "";
-  menuData.forEach((menu) => {
+  menuData.forEach((menu, index) => {
     const card = document.createElement("div");
-    card.className = "bg-white rounded-lg shadow p-4 text-black flex flex-col";
+    card.className =
+      "bg-white rounded-lg shadow p-4 text-black flex flex-col cursor-pointer"; // Tambah cursor-pointer
+      
+    // Tambahkan class Tailwind untuk mengubah warna harga
+    const priceColor = index % 2 === 0 ? "text-amber-700" : "text-green-700"; 
 
     card.innerHTML = `
-      <img src="${menu.foto}" alt="${menu.nama}" class="w-full h-40 object-cover rounded mb-3">
-      <h3 class="text-lg font-semibold">${menu.nama}</h3>
-      <p class="text-sm text-gray-700">${menu.deskripsi}</p>
-      <p class="font-bold text-blue-700 mt-2">Rp ${formatRupiah(menu.harga)}</p>
-      <button class="bg-amber-700 text-white rounded p-2 mt-3 hover:bg-amber-800" data-menu-id="${menu.id}">
-        Tambah ke Pesanan
-      </button>
-    `;
+<img src="${menu.foto}" alt="${menu.nama}" class="w-full h-40 object-cover rounded mb-3">
+<h3 class="text-lg font-semibold text-amber-900">${menu.nama}</h3>
+<p class="text-sm text-gray-700 flex-grow">${menu.deskripsi}</p>
+<p class="font-bold ${priceColor} mt-2 text-xl">Rp ${formatRupiah(
+      menu.harga
+    )}</p>
+<button class="bg-amber-700 text-white rounded p-2 mt-3 hover:bg-amber-800">
+Tambah ke Pesanan
+</button>
+`;
 
     const btnPesan = card.querySelector("button");
-    btnPesan.addEventListener("click", () => tambahPesanan(menu.id)); 
+    btnPesan.addEventListener("click", () => tambahPesanan(index));
 
     menuList.appendChild(card);
   });
 }
 
-function findMenuById(id) {
-    const menuIdInt = parseInt(id); 
-    return menuData.find(menu => menu.id === menuIdInt);
-}
-
-function tambahPesanan(menuId) {
-  const existingItem = pesanan.find(item => item.menu.id === menuId);
-
-  if (existingItem) {
-    existingItem.kuantitas++;
-  } else {
-    const menu = findMenuById(menuId);
-    if (menu) {
-      pesanan.push({ menu: menu, kuantitas: 1 });
-    }
-  }
+function tambahPesanan(index) {
+  // Hanya ambil data yang diperlukan dari menuData
+  const itemBaru = {
+    nama: menuData[index].nama,
+    harga: menuData[index].harga,
+  };
+  pesanan.push(itemBaru);
   renderPesanan();
-}
-
-function updateKuantitas(menuId, change) {
-    const item = pesanan.find(item => item.menu.id === menuId);
-
-    if (item) {
-        item.kuantitas += change;
-
-        if (item.kuantitas <= 0) {
-            hapusItemPesanan(menuId);
-        } else {
-            renderPesanan();
-        }
-    }
-}
-
-function hapusItemPesanan(menuId) {
-    pesanan = pesanan.filter(item => item.menu.id !== menuId);
-    renderPesanan();
 }
 
 function renderPesanan() {
   orderList.innerHTML = "";
   let total = 0;
 
-  pesanan.forEach((item) => {
-    // Hitung total
-    const subtotal = item.menu.harga * item.kuantitas;
-    total += subtotal;
+  pesanan.forEach((item, i) => {
+    total += item.harga;
 
     const li = document.createElement("li");
-    // Menggunakan flexbox untuk memposisikan konten kiri (nama/harga) dan kontrol kanan (tombol)
-    li.className = "flex justify-between items-center py-2 border-b border-amber-200 last:border-b-0"; 
-    
-    // Konten Kiri (Nama dan Harga x Kuantitas)
-    const leftContent = document.createElement('div');
-    leftContent.innerHTML = `
-        <p class="font-semibold text-pink-800">${item.menu.nama}</p>
-        <p class="text-gray-600 text-sm">Rp ${formatRupiah(item.menu.harga)} &times; ${item.kuantitas}</p>
-    `;
-    
-    // Kontrol Kanan (Tombol -, +, Hapus)
-    const rightControls = document.createElement('div');
-    rightControls.className = 'flex items-center space-x-2';
-    rightControls.innerHTML = `
-      <button data-id="${item.menu.id}" data-action="decrement"
-        class="bg-pink-500 text-white w-8 h-8 flex items-center justify-center rounded hover:bg-pink-600 active:scale-95 text-xl leading-none p-0 focus:outline-none font-bold">
-        -
-      </button>
-      <button data-id="${item.menu.id}" data-action="increment"
-        class="bg-pink-500 text-white w-8 h-8 flex items-center justify-center rounded hover:bg-pink-600 active:scale-95 text-xl leading-none p-0 focus:outline-none font-bold">
-        +
-      </button>
-      <button data-id="${item.menu.id}" data-action="delete" 
-        class="bg-red-600 text-white rounded p-2 hover:bg-red-700 font-semibold">
-        Hapus
-      </button>
-    `;
+    li.className = "flex justify-between items-center py-2";
 
-    // Gabungkan ke LI
-    li.appendChild(leftContent);
-    li.appendChild(rightControls);
+    li.innerHTML = `
+<span>${item.nama} - **Rp ${formatRupiah(item.harga)}**</span>
+<button class="bg-orange-600 text-white text-sm rounded px-3 py-1 hover:bg-orange-700">❌ Hapus</button>
+`;
 
-    // Tambahkan event listener untuk tombol aksi
-    rightControls.querySelectorAll("button").forEach(btn => {
-        const menuId = parseInt(btn.getAttribute("data-id"));
-        const action = btn.getAttribute("data-action");
-
-        btn.addEventListener("click", () => {
-            if (action === "increment") {
-                updateKuantitas(menuId, 1);
-            } else if (action === "decrement") {
-                updateKuantitas(menuId, -1);
-            } else if (action === "delete") {
-                hapusItemPesanan(menuId);
-            }
-        });
+    li.querySelector("button").addEventListener("click", () => {
+      // Hapus item dari array pesanan berdasarkan index (i)
+      pesanan.splice(i, 1);
+      renderPesanan();
     });
 
     orderList.appendChild(li);
   });
 
-  // Pastikan format total harga sesuai gambar
-  totalHarga.textContent = `Total: Rp ${formatRupiah(total)}`;
+  totalHarga.textContent = `💰 Total: Rp ${formatRupiah(total)}`;
 }
 
-// Inisialisasi tampilan awal
-renderMenu();
-renderPesanan();
+// Fungsi inisialisasi: Panggil renderMenu() untuk menampilkan 3 menu tetap saat aplikasi dimuat
+function init() {
+  renderMenu();
+}
+
+// Panggil init
+init();
